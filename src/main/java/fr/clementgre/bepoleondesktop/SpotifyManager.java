@@ -4,6 +4,7 @@ import org.apache.hc.core5.http.ParseException;
 import se.michaelthelin.spotify.SpotifyApi;
 import se.michaelthelin.spotify.SpotifyHttpManager;
 import se.michaelthelin.spotify.exceptions.SpotifyWebApiException;
+import se.michaelthelin.spotify.model_objects.credentials.AuthorizationCodeCredentials;
 import se.michaelthelin.spotify.model_objects.miscellaneous.CurrentlyPlayingContext;
 import se.michaelthelin.spotify.model_objects.specification.Track;
 import se.michaelthelin.spotify.requests.data.library.CheckUsersSavedTracksRequest;
@@ -12,6 +13,7 @@ import se.michaelthelin.spotify.requests.data.tracks.GetTrackRequest;
 
 import java.io.IOException;
 import java.util.Properties;
+import java.util.concurrent.CompletableFuture;
 
 public class SpotifyManager {
 
@@ -26,18 +28,6 @@ public class SpotifyManager {
                 .setRedirectUri(SpotifyHttpManager.makeUri("https://example.com/spotify-redirect"))
                 .setRefreshToken(secrets.getProperty("refreshToken"))
                 .build();
-
-        SpotifyAuthorizer.authorizationCodeRefresh_Sync(spotifyApi);
-        new Thread(() -> {
-            while (true) {
-                try {
-                    Thread.sleep(1000 * 60 * 55);
-                    SpotifyAuthorizer.authorizationCodeRefresh_Sync(spotifyApi);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
     }
 
     public CurrentlyPlayingContext getInformationAboutUsersCurrentPlayback_Sync() {
@@ -62,7 +52,7 @@ public class SpotifyManager {
         return null;
     }
 
-    public boolean isTrackLiked(String id){
+    public boolean isTrackLiked(String id) {
         try {
             final CheckUsersSavedTracksRequest checkUsersSavedTracksRequest = spotifyApi.checkUsersSavedTracks(id)
                     .build();

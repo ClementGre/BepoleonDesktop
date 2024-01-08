@@ -44,6 +44,8 @@ public class SpotifyAuthorizer {
             final AuthorizationCodeCredentials authorizationCodeCredentials = authorizationCodeRefreshRequest.execute();
 
             // Set access and refresh token for further "spotifyApi" object usage
+            System.out.println("New access token: " + authorizationCodeCredentials.getAccessToken());
+            System.out.println("New refresh token: " + authorizationCodeCredentials.getRefreshToken());
             spotifyApi.setAccessToken(authorizationCodeCredentials.getAccessToken());
 
             System.out.println("Expires in: " + authorizationCodeCredentials.getExpiresIn());
@@ -56,12 +58,7 @@ public class SpotifyAuthorizer {
         try {
             final AuthorizationCodeRefreshRequest authorizationCodeRefreshRequest = spotifyApi.authorizationCodeRefresh()
                     .build();
-            final CompletableFuture<AuthorizationCodeCredentials> authorizationCodeCredentialsFuture = authorizationCodeRefreshRequest.executeAsync();
-
-            authorizationCodeCredentialsFuture.thenAccept(authorizationCodeCredentials -> {
-                spotifyApi.setAccessToken(authorizationCodeCredentials.getAccessToken());
-                System.out.println("Expires in: " + authorizationCodeCredentials.getExpiresIn());
-            });
+            return authorizationCodeRefreshRequest.executeAsync();
         } catch (CompletionException e) {
             System.out.println("Error: " + e.getCause().getMessage());
         } catch (CancellationException e) {

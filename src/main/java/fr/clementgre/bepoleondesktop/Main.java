@@ -6,8 +6,9 @@ import oshi.SystemInfo;
 import oshi.hardware.CentralProcessor;
 import oshi.hardware.HardwareAbstractionLayer;
 import se.michaelthelin.spotify.model_objects.miscellaneous.CurrentlyPlayingContext;
-import se.michaelthelin.spotify.model_objects.specification.ArtistSimplified;
 import se.michaelthelin.spotify.model_objects.specification.Track;
+
+import java.text.Normalizer;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -20,49 +21,51 @@ public class Main {
 
     private static final AtomicBoolean isPlaying = new AtomicBoolean(false);
     private static final AtomicBoolean isDeviceReady = new AtomicBoolean(false);
-    public static void main(String[] args) {
-        // Fetch playing track and device HID every 5 seconds
+    private static long last_refresh_millis = System.currentTimeMillis() - 1000 * 60 * 60; // will refresh at start
+    private static long last_spotify_millis = System.currentTimeMillis();
+    private static long last_perfs_millis = System.currentTimeMillis();
 
-        new Thread(() -> {
-            while (true) {
-                try {
-                    Thread.sleep(5000);
+    public static void main(String[] args) {
+        while(true){
+            try {
+                Thread.sleep(100);
+                if(System.currentTimeMillis() - last_refresh_millis > 1000 * 60 * 59){
+                    logger.info("Refreshing tokens...");
+                    last_refresh_millis = System.currentTimeMillis();
+                    SpotifyAuthorizer.authorizationCodeRefresh_Sync(spotifyManager.spotifyApi);
+                }
+                if(System.currentTimeMillis() - last_spotify_millis > 2000 * 5){
                     if(hidManager.isDeviceReady()){
                         isDeviceReady.set(true);
-                        CurrentlyPlayingContext currentlyPlaying = spotifyManager.getInformationAboutUsersCurrentPlayback_Sync();
-                        if (currentlyPlaying != null && currentlyPlaying.getIs_playing()) {
-                            isPlaying.set(true);
-                            sendSpotifyData(currentlyPlaying);
-                        } else {
-                            isPlaying.set(false);
+                        if(isDeviceReady.get()){
+                            last_spotify_millis = System.currentTimeMillis();
+                            CurrentlyPlayingContext currentlyPlaying = spotifyManager.getInformationAboutUsersCurrentPlayback_Sync();
+                            if (currentlyPlaying != null && currentlyPlaying.getIs_playing()) {
+                                isPlaying.set(true);
+                                sendSpotifyData(currentlyPlaying);
+                            } else {
+                                isPlaying.set(false);
+                            }
                         }
                     }else{
                         isDeviceReady.set(false);
                         hidManager.findDevice();
-                        logger.debug("Device not ready");
                     }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+
                 }
-            }
-        }).start();
-
-
-        // Fetch system perfs every second
-        new Thread(() -> {
-            while (true) {
-                try {
+                if(System.currentTimeMillis() - last_perfs_millis > 2067){
+                    last_perfs_millis = System.currentTimeMillis();
                     if(!isPlaying.get() && isDeviceReady.get()){
                         sendSystemDataAndWait();
-                    }else{
-                        Thread.sleep(1000);
                     }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
                 }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-        }).start();
+        }
     }
+
+
 
 
     public static void sendSpotifyData(CurrentlyPlayingContext currentlyPlaying){
@@ -77,14 +80,14 @@ public class Main {
         // song
         data[0] = 0x01;
         for(int i = 4; i <= 25; i++) data[i] = 0x20;
-        char[] chars = currentlyPlaying.getItem().getName().toCharArray();
+        char[] chars = removeAccents(currentlyPlaying.getItem().getName()).toCharArray();
         for(int i = 4; i < chars.length+4 && i <= 25; i++) data[i] = (byte) chars[i - 4];
         hidManager.sendData(data);
 
         // singer
         data[0] = 0x02;
         for(int i = 4; i <= 25; i++) data[i] = 0x20;
-        chars = Arrays.stream(track.getArtists()).map(ArtistSimplified::getName).collect(Collectors.joining(" & ")).toCharArray();
+        chars = Arrays.stream(track.getArtists()).map(a -> removeAccents(a.getName())).collect(Collectors.joining(", ")).toCharArray();
         for(int i = 4; i < chars.length+4 && i <= 25; i++) data[i] = (byte) chars[i - 4];
         hidManager.sendData(data);
     }
@@ -98,7 +101,7 @@ public class Main {
         double ramTotal = hal.getMemory().getTotal() / 1073741824d;
         double ramUsed = ramTotal - (hal.getMemory().getAvailable() / 1073741824d);
         double ramLoad = ramUsed / ramTotal;
-        double cpuLoad = cpu.getSystemCpuLoad(1000);
+        double cpuLoad = cpu.getSystemCpuLoad(1900);
         System.out.println("System specs: " + cpuTemp + "°C " + ramUsed + "GB/" + ramTotal + "GB " + cpuLoad + "%" + " " + ramLoad + "%");
 
         byte[] data = new byte[32];
@@ -115,5 +118,12 @@ public class Main {
         if(!isPlaying.get() && isDeviceReady.get()){
             hidManager.sendData(data);
         }
+    }
+
+    private static String removeAccents(String input) {
+        if (input == null) return null;
+        return Normalizer.normalize(input, Normalizer.Form.NFKD)
+                .replaceAll("é", "\u000E")
+                .replaceAll("[^ -~\u000E]", "");
     }
 }

@@ -22,7 +22,7 @@ public class HidManager {
 
     public void findDevice() {
         for (HidDevice hidDevice : hidServices.getAttachedHidDevices()) {
-            System.out.println(hidDevice);
+//            System.out.println(hidDevice);
             if (hidDevice.getUsage() == 0x61 && hidDevice.getUsagePage() == 0xffffff60) {
                 device = hidDevice;
                 device.open();
@@ -36,7 +36,7 @@ public class HidManager {
     }
 
     public void sendData(byte[] data) {
-        Main.logger.debug("Sending data: " + Arrays.toString(data));
+        //Main.logger.debug("Sending data: " + Arrays.toString(data));
         device.write(data, 32, (byte) 0x00);
     }
 
