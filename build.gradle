@@ -26,6 +26,8 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter'
 
     implementation 'se.michaelthelin.spotify:spotify-web-api-java:8.3.4'
+    implementation 'com.google.code.gson:gson:2.10.1'
+
     implementation 'com.github.gary-rowe:hid4java:develop-SNAPSHOT'
     implementation 'com.github.oshi:oshi-core:6.4.10'
 
@@ -42,7 +44,7 @@ test {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(19))
+        languageVersion.set(JavaLanguageVersion.of(21))
     }
 }
 
