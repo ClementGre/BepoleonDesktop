@@ -51,3 +51,8 @@ java {
 application {
     mainClass.set("fr.clementgre.bepoleondesktop.Main")
 }
+jar {
+    manifest {
+        attributes 'Main-Class': application.mainClass
+    }
+}

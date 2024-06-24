@@ -86,7 +86,7 @@ public class Main implements HidManager.HidDataListener {
                 }
                 if (System.currentTimeMillis() - last_perfs_millis > PERFS_INTERVAL) {
                     last_perfs_millis = System.currentTimeMillis();
-                    if (!isPlaying.get() && isDeviceReady.get()) {
+                    if (!isPlaying.get() && hidManager.isDeviceReady()) {
                         sendSystemDataAndWait();
                     }
                 }
