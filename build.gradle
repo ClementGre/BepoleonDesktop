@@ -56,3 +56,15 @@ jar {
         attributes 'Main-Class': application.mainClass
     }
 }
+
+tasks.register('createExe', Exec) {
+    dependsOn jar
+    commandLine 'jpackage',
+            '--type', 'msi',
+            '--input', "$buildDir/install/BepoleonDesktop/lib",
+            '--name', 'BepoleonDesktop',
+            '--main-jar', 'BepoleonDesktop-1.0.jar',
+            '--main-class', 'fr.clementgre.bepoleondesktop.Main',
+//            '--icon', 'path/to/icon.ico',
+            '--app-version', '1.0'
+}
