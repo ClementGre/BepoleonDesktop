@@ -66,7 +66,7 @@ public class SpotifyManager {
 
     public void pauseResume() {
         CurrentlyPlayingContext currentlyPlaying = getInformationAboutUsersCurrentPlayback_Sync();
-        if (currentlyPlaying.getIs_playing()) {
+        if (currentlyPlaying != null && currentlyPlaying.getIs_playing()) {
             pause();
         } else {
             resume();
